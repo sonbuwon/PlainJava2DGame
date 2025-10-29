@@ -11,7 +11,8 @@ My2DGame/
 │   ├── main/
 │   │   ├── Main.class
 │   │   ├── GamePanel.class
-│   │   └── KeyHandler.class
+│   │   ├── KeyHandler.class
+│   │   └── CollisionChecker.class
 │   ├── entity/
 │   │   ├── Entity.class
 │   │   └── Player.class
@@ -44,7 +45,8 @@ My2DGame/
     ├── main/
     │   ├── Main.java       # 메인 애플리케이션 진입점
     │   ├── GamePanel.java  # 게임 화면 및 로직 처리
-    │   └── KeyHandler.java # 키보드 입력 처리
+    │   ├── KeyHandler.java # 키보드 입력 처리
+    │   └── CollisionChecker.java # 충돌 감지 시스템
     ├── entity/             # 게임 엔티티 클래스들
     │   ├── Entity.java     # 기본 엔티티 클래스
     │   └── Player.java     # 플레이어 클래스
@@ -70,7 +72,8 @@ My2DGame/
   - 월드 설정: 50x50 타일 (2400x2400 픽셀 월드) (GamePanel.java:26-29)
   - FPS: 60프레임
   - TileManager 객체 인스턴스 관리 (GamePanel.java:34)
-  - Player 객체 인스턴스 관리 (GamePanel.java:37)
+  - CollisionChecker 객체 인스턴스 관리 (GamePanel.java:37)
+  - Player 객체 인스턴스 관리 (GamePanel.java:38)
 
 - **주요 메서드**:
   - `startGameThread()`: 게임 루프 스레드 시작 (GamePanel.java:47)
@@ -87,7 +90,15 @@ My2DGame/
   - D: 오른쪽 이동
 - **구현 방식**: KeyListener 인터페이스 구현
 
-### 4. Entity.java (src/entity/Entity.java:5)
+### 4. CollisionChecker.java (src/main/CollisionChecker.java:5)
+**역할**: 게임 내 충돌 감지 시스템
+- **주요 기능**:
+  - `checkTile()`: 엔티티와 타일 간의 충돌 감지 (CollisionChecker.java:13)
+  - 엔티티의 solid area와 타일의 collision 속성을 비교하여 충돌 판정
+  - 이동 방향별로 충돌할 타일을 미리 계산하여 이동 가능 여부 결정
+  - 좌표 변환을 통해 월드 좌표를 타일 인덱스로 변환 (CollisionChecker.java:20-23)
+
+### 5. Entity.java (src/entity/Entity.java:5)
 **역할**: 게임 내 모든 엔티티의 기본 클래스
 - **주요 속성**:
   - `worldX, worldY`: 월드 좌표계 위치 (Entity.java:7)
@@ -95,36 +106,39 @@ My2DGame/
   - 스프라이트 이미지들: 각 방향별 2개씩 (up1, up2, down1, down2, left1, left2, right1, right2) (Entity.java:10)
   - `direction`: 현재 바라보는 방향 (Entity.java:11)
   - `spriteCounter, spriteNum`: 애니메이션 제어용 변수 (Entity.java:13-14)
+  - `solidArea`: 충돌 감지를 위한 Rectangle 영역 (Entity.java:14)
+  - `collisionOn`: 충돌 상태 플래그 (Entity.java:15)
 
-### 5. Player.java (src/entity/Player.java:13)
+### 6. Player.java (src/entity/Player.java:13)
 **역할**: 플레이어 캐릭터 구현
 - **상속**: Entity 클래스를 상속받음
 - **주요 속성**:
   - `screenX, screenY`: 화면상의 고정 표시 위치 (Player.java:18-19)
+  - `solidArea`: 충돌 감지 영역 (8,16,32,32) (Player.java:30-33)
 - **주요 기능**:
-  - **생성자**: GamePanel과 KeyHandler 참조 저장, 화면 중앙 위치 계산, 기본값 설정, 이미지 로드 (Player.java:21)
-  - **setDefaultValues()**: 플레이어 초기 월드 위치(타일 23,21), 속도(4), 방향(down) 설정 (Player.java:33)
-  - **getPlayerImage()**: 8개의 스프라이트 이미지 로드 (/player/boy_*.png) (Player.java:40)
-  - **update()**: 키 입력에 따른 월드 좌표 움직임 처리 및 애니메이션 제어 (Player.java:55)
-  - **draw()**: 현재 방향과 애니메이션 프레임에 따른 스프라이트 렌더링 (Player.java:87)
+  - **생성자**: GamePanel과 KeyHandler 참조 저장, 화면 중앙 위치 계산, 충돌 영역 설정, 기본값 설정, 이미지 로드 (Player.java:21)
+  - **setDefaultValues()**: 플레이어 초기 월드 위치(타일 23,21), 속도(4), 방향(down) 설정 (Player.java:38)
+  - **getPlayerImage()**: 8개의 스프라이트 이미지 로드 (/player/boy_*.png) (Player.java:45)
+  - **update()**: 키 입력에 따른 방향 설정, 충돌 감지 확인 후 이동 처리, 애니메이션 제어 (Player.java:60)
+  - **draw()**: 현재 방향과 애니메이션 프레임에 따른 스프라이트 렌더링 (Player.java:99)
 
-### 6. Tile.java (src/tile/Tile.java:5)
+### 7. Tile.java (src/tile/Tile.java:5)
 **역할**: 개별 타일의 기본 정보를 담는 클래스
 - **주요 속성**:
   - `image`: 타일의 BufferedImage 이미지 (Tile.java:7)
   - `collision`: 충돌 감지 플래그 (기본값: false) (Tile.java:8)
 
-### 7. TileManager.java (src/tile/TileManager.java:13)
+### 8. TileManager.java (src/tile/TileManager.java:13)
 **역할**: 타일맵 시스템의 핵심 관리 클래스
 - **주요 속성**:
-  - `tile[]`: 타일 타입별 이미지 배열 (최대 10개) (TileManager.java:16)
-  - `mapTileNum[][]`: 50x50 2차원 맵 데이터 배열 (TileManager.java:17)
+  - `tile[]`: 타일 타입별 이미지 배열 (최대 10개, public 접근) (TileManager.java:16)
+  - `mapTileNum[][]`: 50x50 2차원 맵 데이터 배열 (public 접근) (TileManager.java:17)
 
 - **주요 기능**:
   - **생성자**: GamePanel 참조 저장, 타일 배열 초기화, 타일 이미지 로드, 맵 로딩 (TileManager.java:19)
-  - **getTileImage()**: 다양한 타일 이미지들 로드 (grass, wall, water, earth, tree, road) (TileManager.java:29)
-  - **loadMap()**: 텍스트 파일에서 50x50 맵 데이터 로딩 (/maps/world01.txt) (TileManager.java:55)
-  - **draw()**: 카메라 뷰포트 기반 효율적 타일맵 렌더링 (TileManager.java:87)
+  - **getTileImage()**: 다양한 타일 이미지들 로드 및 충돌 속성 설정 (wall, water, tree는 충돌 가능) (TileManager.java:34)
+  - **loadMap()**: 텍스트 파일에서 50x50 맵 데이터 로딩 (/maps/world01.txt) (TileManager.java:60)
+  - **draw()**: 카메라 뷰포트 기반 효율적 타일맵 렌더링 (TileManager.java:92)
 
 ## 기술적 특징
 
@@ -147,8 +161,15 @@ My2DGame/
 - **플레이어 고정 위치**: 플레이어는 화면 중앙에 고정되고 배경이 이동하는 방식
 
 ### 입력 처리
-- **즉시 반응**: 키 입력 시 즉시 플레이어 이동
-- **연속 입력**: 키를 누르고 있는 동안 지속적인 이동
+- **방향 설정**: 키 입력 시 플레이어 방향만 먼저 설정
+- **충돌 기반 이동**: 충돌 감지 후 이동 가능할 때만 실제 이동 처리
+- **연속 입력**: 키를 누르고 있는 동안 지속적인 방향 및 이동 시도
+
+### 충돌 감지 시스템
+- **Solid Area**: 각 엔티티마다 충돌 감지용 Rectangle 영역 정의 (Player.java:30-33)
+- **타일 기반 충돌**: 타일의 collision 속성을 통한 충돌 감지 (wall, water, tree 타일)
+- **예측 충돌 감지**: 이동하기 전에 충돌 여부를 미리 계산하여 부드러운 이동 구현
+- **방향별 처리**: 각 이동 방향에 대해 독립적인 충돌 계산 (CollisionChecker.java:27-60)
 
 ### 애니메이션 시스템
 - **스프라이트 애니메이션**: 각 방향별 2프레임 애니메이션 (Player.java:68-77)
@@ -159,14 +180,15 @@ My2DGame/
 - **다양한 타일 타입**: grass, wall, water, earth, tree, road 등 6가지 기본 타일 지원
 - **대형 맵 지원**: 50x50 타일 월드 (2400x2400 픽셀)
 - **맵 데이터 로딩**: 텍스트 파일에서 맵 데이터 읽기 (/maps/world01.txt)
-- **충돌 감지 준비**: Tile 클래스에 collision 플래그 포함 (향후 충돌 감지 시스템 확장 가능)
-- **뷰포트 컬링**: 카메라 뷰포트 내에 있는 타일만 렌더링하는 최적화 시스템 (TileManager.java:102-108)
+- **충돌 감지 구현**: wall, water, tree 타일에 collision 속성 설정으로 실제 충돌 감지 작동
+- **뷰포트 컬링**: 카메라 뷰포트 내에 있는 타일만 렌더링하는 최적화 시스템 (TileManager.java:107-113)
 
 ### 객체지향 설계
 - **상속 구조**: Entity 기본 클래스와 Player 상속 클래스
-- **캡슐화**: 각 클래스별 역할 분리 (렌더링, 입력처리, 엔티티 관리, 타일 관리)
+- **캡슐화**: 각 클래스별 역할 분리 (렌더링, 입력처리, 엔티티 관리, 타일 관리, 충돌 감지)
 - **확장성**: Entity 클래스를 통해 다양한 게임 오브젝트 추가 가능
 - **모듈화**: tile 패키지를 통한 타일 시스템 모듈화
+- **시스템 분리**: CollisionChecker 클래스를 통한 충돌 감지 로직 분리
 
 ## 개발 환경
 - **언어**: Java
@@ -189,9 +211,11 @@ My2DGame/
 11. **맵 데이터 로딩** (텍스트 파일 기반)
 12. **레이어별 렌더링** (타일맵 + 플레이어)
 13. **렌더링 최적화** (뷰포트 컷링을 통한 성능 최적화)
+14. **충돌 감지 시스템** (플레이어와 타일 간 충돌 감지 및 이동 제한)
+15. **Solid Area 기반 충돌** (정밀한 충돌 영역 설정)
 
 ## 향후 확장 가능성
-- **충돌 감지 시스템** (Tile 클래스의 collision 플래그 활용)
+- **엔티티 간 충돌 감지** (플레이어와 NPC, 적 캐릭터 간 충돌)
 - **다양한 맵 레벨** (추가 맵 파일 및 타일 타입)
 - **NPC 및 적 캐릭터** (Entity 클래스 상속)
 - **게임 오브젝트 관리 시스템**
@@ -201,8 +225,9 @@ My2DGame/
 - **미니맵 시스템**
 - **다양한 타일 애니메이션**
 - **파티클 시스템** (물 효과, 바람 효과 등)
+- **충돌 가능한 오브젝트** (문, 상자, 아이템 등의 상호작용 가능한 오브젝트)
 
 ## Git 정보
 - **현재 브랜치**: master
-- **최근 커밋**: "add tile manager and tile info."
+- **최근 커밋**: "add player collision detection"
 - **상태**: Clean (변경사항 없음)
